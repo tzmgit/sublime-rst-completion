@@ -66,8 +66,16 @@ class SimpletableCommand(BaseBlockCommand):
     def _draw_table(self, indent, table):
         if not table:
             return []
+
+        for idx, row in enumerate(table):
+            if idx > 0:
+                if len(table[idx-1]) > 1 and table[idx-1][1] == ':FOR':
+                    # add a empty cell as the second cell for the second line in a for loop
+                    row.insert(1, '')
+                    table[idx] = row
+
         col_widths = self._get_column_max_widths(table)
-        # Reserve room for separater
+        # Reserve room for separator
         len_sep = len(SimpletableCommand._SEPARATOR)
         sep_col_widths = [(col + len_sep) for col in col_widths]
         width_formats = [('%-' + str(w) + 's' + SimpletableCommand._SEPARATOR) for w in col_widths]
