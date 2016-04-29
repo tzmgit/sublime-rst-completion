@@ -67,9 +67,12 @@ class SimpletableCommand(BaseBlockCommand):
         if not table:
             return []
 
+        for_item = None
         for idx, row in enumerate(table):
             if idx > 0:
-                if len(table[idx-1]) > 1 and table[idx-1][1].upper() == ':FOR':
+                if (len(table[idx-1]) > 1 and table[idx-1][1].upper() == ':FOR') or (for_item and for_item in str(row)):
+                    if not for_item:
+                        for_item = table[idx-1][2]
                     # add a empty cell as the second cell for the second line in a for loop
                     row.insert(1, '')
                     table[idx] = row
