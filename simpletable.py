@@ -69,10 +69,16 @@ class SimpletableCommand(BaseBlockCommand):
 
         for idx, row in enumerate(table):
             if idx > 0:
-                if len(table[idx-1]) > 1 and table[idx-1][1] == ':FOR':
+                if len(table[idx-1]) > 1 and table[idx-1][1].upper() == ':FOR':
                     # add a empty cell as the second cell for the second line in a for loop
                     row.insert(1, '')
                     table[idx] = row
+
+        # if the second column is a dot sign, replace it with blank string and keep this column
+        for idx, row in enumerate(table):
+            if len(row) > 2 and row[1] == '.':
+                row[1] = ''
+                table[idx] = row
 
         col_widths = self._get_column_max_widths(table)
         # Reserve room for separator
