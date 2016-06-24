@@ -73,29 +73,31 @@ class SimpletableCommand(BaseBlockCommand):
             print idx
             if idx > 0:
                 pre_row = table[idx - 1]
-                if len(row) > 1 and row[1].upper() == ':FOR':
+                if len(pre_row) <= 1 or len(row) <= 1:
+                    continue
+                if row[1].upper() == ':FOR':
                     for_item = row[2]
                     continue
-                if for_item:
+                if pre_row[1].upper() == ':FOR':
+                    # add a empty cell as the second cell for the second line in a for loop
+                    row.insert(1, '')
+                    table[idx] = row
+                elif for_item:
                     for cell in row[:]:
                         if for_item in cell:
                             row.insert(1, '')
                             table[idx] = row
                             break
-                elif len(pre_row) > 1:
-                    if pre_row[1].upper() == ':FOR':
-                        # add a empty cell as the second cell for the second line in a for loop
-                        row.insert(1, '')
-                        table[idx] = row
-                    elif pre_row[1] == '':
-                        for cell in row[:]:
-                            # find a var defined inside FOR loop being used in current row, so the row is inside the FOR loop
-                            if (cell + '=') in pre_row or (for_item and for_item in cell):
-                                row.insert(1, '')
-                                table[idx] = row
-                                break
+                elif pre_row[1] == '':
+                    for cell in row[:]:
+                        # find a var defined inside FOR loop being used in current row, so the row is inside the FOR loop
+                        if (cell + '=') in pre_row or (for_item and for_item in cell):
+                            row.insert(1, '')
+                            table[idx] = row
+                            break
             if for_item and (for_item + '=') in str(row):  # var is re-defined
                 for_item = None
+        for_item = None
 
         # if the second column is a dot sign, replace it with blank string and keep this column
         for idx, row in enumerate(table):
