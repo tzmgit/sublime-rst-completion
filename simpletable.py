@@ -68,36 +68,63 @@ class SimpletableCommand(BaseBlockCommand):
             return []
 
         for_item = None
+        vars_in_for = []
+        insert_empty_cell = False
+        start_mult_line_for = False
         for idx, row in enumerate(table):
-            print row
-            print idx
             if idx > 0:
                 pre_row = table[idx - 1]
-                if len(pre_row) <= 1 or len(row) <= 1:
+                if len(row) <= 1:
                     continue
                 if row[1].upper() == ':FOR':
                     for_item = row[2]
+                    vars_in_for = []
                     continue
-                if pre_row[1].upper() == ':FOR':
+                if for_item:
+                    if (len(row) > 1 and (row[0] not in ['\\', '#\\'])) or pre_row[0] != '\\':  # new keyword start
+                        for_item = None
+                        vars_in_for = []
+                        continue
+                if insert_empty_cell and len(row) > 1 and row[1] == '...':
+                    row.insert(1, '')
+                    table[idx] = row
+                    insert_empty_cell = True
+                    continue
+                insert_empty_cell = False
+                if len(pre_row) > 1 and pre_row[1].upper() == ':FOR' and pre_row[-1].upper() != 'IN':
                     # add a empty cell as the second cell for the second line in a for loop
                     row.insert(1, '')
                     table[idx] = row
+                    insert_empty_cell = True
+                    start_mult_line_for = True
                 elif for_item:
                     for cell in row[:]:
-                        if for_item in cell:
+                        if for_item and for_item in cell:
                             row.insert(1, '')
                             table[idx] = row
+                            insert_empty_cell = True
                             break
-                elif pre_row[1] == '':
-                    for cell in row[:]:
-                        # find a var defined inside FOR loop being used in current row, so the row is inside the FOR loop
-                        if (cell + '=') in pre_row or (for_item and for_item in cell):
-                            row.insert(1, '')
-                            table[idx] = row
+                        elif vars_in_for:
+                            for var_in_for in vars_in_for:
+                                if var_in_for in cell:
+                                    row.insert(1, '')
+                                    table[idx] = row
+                                    insert_empty_cell = True
+                                    break
+                        if insert_empty_cell:
                             break
-            if for_item and (for_item + '=') in str(row):  # var is re-defined
-                for_item = None
-        for_item = None
+                if insert_empty_cell:
+                    # find a var defined inside FOR loop being used in current row, so the row is inside the FOR loop
+                    for t_idx, t_cell in enumerate(row):
+                        if t_cell.endswith('='):
+                            vars_in_for.append(t_cell[:-1])
+                            if t_idx > 2:
+                                for extra_var in row[2:t_idx]:
+                                    vars_in_for.append(extra_var)
+                            break
+                if for_item and (for_item + '=') in str(row) or not insert_empty_cell:  # var is re-defined
+                    for_item = None
+                    vars_in_for = []
 
         # if the second column is a dot sign, replace it with blank string and keep this column
         for idx, row in enumerate(table):
